@@ -1,11 +1,93 @@
 'use strict'
 
 exports.handler = (event, context, callback) => {
+  function listBooks() {
+    let qr = `
+    query {
+      listBooks(first: 999) {
+        items {
+          bookId
+        }
+      }
+    }
+    `
+
+    return client.query({ query: gql(qr) }).then(response => {
+      let results = []
+
+      response.data.listBooks.items.forEach(element => {
+        results.push(element.bookId)
+      })
+      return results
+    })
+  }
+  function listFilesByBook(bookId) {
+    let qr = `
+    query {
+      listFilesByBook(bookId: "${bookId}") {
+        items {
+          fileId
+        }
+      }
+    }
+    `
+    return client.query({ query: gql(qr) }).then(response => {
+      let results = []
+
+      response.data.listFilesByBook.items.forEach(element => {
+        results.push(element.fileId)
+      })
+      return results
+    })
+  }
+  function listSessionsByFile(fileId) {
+    let qr = `
+    query {
+      listSessionsByFile(fileId: "${fileId}") {
+        items {
+          sessionId
+        }
+      }
+    }
+    `
+
+    return client.query({ query: gql(qr) }).then(response => {
+      let results = []
+
+      response.data.listSessionsByFile.items.forEach(element => {
+        results.push(element.sessionId)
+      })
+      return results
+    })
+  }
+  function listEventsBySession(sessionId) {
+    let qr = `
+    query {
+      listEventsBySession(sessionId: "${sessionId}"){
+        items {
+          eventId
+          content
+        }
+      }
+    }
+    `
+    return client.query({ query: gql(qr) }).then(response => {
+      return response.data.listEventsBySession.items
+    })
+  }
+  let client, gql
+
   if (!event || !event.cmd) callback(new Error('Missing cmd parameter'))
-  else if (event.cmd !== 'query') callback(new Error('Unknown command'))
+  else if (
+    event.cmd !== 'books' &&
+    event.cmd !== 'sources' &&
+    event.cmd !== 'list' &&
+    event.cmd !== 'single'
+  )
+    callback(new Error('Unknown command'))
   else {
     // init api
-    let settings = require('aws-exports.js').settings
+    const settings = require('./aws-exports.js').settings
     global.WebSocket = require('ws')
     global.window = global.window || {
       setTimeout: setTimeout,
@@ -33,20 +115,20 @@ exports.handler = (event, context, callback) => {
 
     const AUTH_TYPE = require('aws-appsync/lib/link/auth-link').AUTH_TYPE
     const AWSAppSyncClient = require('aws-appsync').default
-    const url = config.ENDPOINT
-    const region = config.REGION
+    const url = settings.ENDPOINT
+    const region = settings.REGION
     const type = AUTH_TYPE.AWS_IAM
     const AWS = require('aws-sdk')
     AWS.config.update({
-      region: config.REGION,
+      region: settings.REGION,
       credentials: new AWS.Credentials({
-        accessKeyId: config.AWS_ACCESS_KEY_ID,
-        secretAccessKey: config.AWS_SECRET_ACCESS_KEY
+        accessKeyId: settings.AWS_ACCESS_KEY_ID,
+        secretAccessKey: settings.AWS_SECRET_ACCESS_KEY
       })
     })
     const credentials = AWS.config.credentials
-    this.gql = require('graphql-tag')
-    this.client = new AWSAppSyncClient({
+    gql = require('graphql-tag')
+    client = new AWSAppSyncClient({
       url: url,
       region: region,
       auth: {
@@ -56,16 +138,59 @@ exports.handler = (event, context, callback) => {
       disableOffline: true
     })
 
+    // main switch
     switch (event.cmd) {
-      case 'query':
-        if (!event.subCmd) callback(new Error('Missing subcmd'))
-        else if (event.subCmd !== 'listFiles')
-          callback(new Error('Unknown subcmd'))
-        else {
-          // carry out the query
+      // return books
+      case 'books':
+        listBooks()
+          .then(results => {
+            callback(null, results)
+          })
+          .catch(error => {
+            callback(error)
+          })
+        break
+      // return the files of a book
+      case 'sources':
+        if (!event.bookId) {
+          callback(new Error('missing bookId parameter'))
+        } else {
+          listFilesByBook(event.bookId)
+            .then(results => {
+              callback(null, results)
+            })
+            .catch(error => {
+              callback(error)
+            })
         }
         break
-      case 'mutate':
+      // return the sessions of a file
+      case 'list':
+        if (!event.fileId) {
+          callback(new Error('missing fileId parameter'))
+        } else {
+          listSessionsByFile(event.fileId)
+            .then(results => {
+              callback(null, results)
+            })
+            .catch(error => {
+              callback(error)
+            })
+        }
+        break
+      // return the events of a session
+      case 'single':
+        if (!event.sessionId) {
+          callback(new Error('missing sessionId parameter'))
+        } else {
+          listEventsBySession(event.sessionId)
+            .then(results => {
+              callback(null, results)
+            })
+            .catch(error => {
+              callback(error)
+            })
+        }
         break
       default:
         break
@@ -74,6 +199,5 @@ exports.handler = (event, context, callback) => {
 }
 
 // exports.handler({
-//   cmd: 'query',
-//   subCmd: 'listFiles'
+//   cmd: 'single',
 // })
