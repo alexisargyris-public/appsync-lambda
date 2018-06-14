@@ -13,6 +13,7 @@
     "apollo-client": "^2.3.4",
     "apollo-link": "^1.0.3",
     "apollo-link-http": "^1.2.0",
+    "apollo-utilities": "^1.0.15",
     "aws-appsync": "^1.0.0",
     "aws-sdk": "^2.257.1",
     "es6-promise": "^4.1.1",
