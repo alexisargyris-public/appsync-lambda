@@ -21,10 +21,10 @@ exports.handler = (event, context, callback) => {
       return results
     })
   }
-  function listFilesByBook(bookId) {
+  function listFilesByBook(bookid) {
     let qr = `
     query {
-      listFilesByBook(bookId: "${bookId}") {
+      listFilesByBook(bookId: "${bookid}") {
         items {
           fileId
         }
@@ -40,10 +40,10 @@ exports.handler = (event, context, callback) => {
       return results
     })
   }
-  function listSessionsByFile(fileId) {
+  function listSessionsByFile(fileid) {
     let qr = `
     query {
-      listSessionsByFile(fileId: "${fileId}") {
+      listSessionsByFile(fileId: "${fileid}") {
         items {
           sessionId
         }
@@ -60,10 +60,10 @@ exports.handler = (event, context, callback) => {
       return results
     })
   }
-  function listEventsBySession(sessionId) {
+  function listEventsBySession(sessionid) {
     let qr = `
     query {
-      listEventsBySession(sessionId: "${sessionId}"){
+      listEventsBySession(sessionId: "${sessionid}"){
         items {
           eventId
           content
@@ -77,7 +77,8 @@ exports.handler = (event, context, callback) => {
   }
   let client, gql
 
-  if (!event || !event.cmd) callback(new Error('Missing cmd parameter'))
+  if (event === undefined || event.cmd === undefined || event.cmd === '')
+    callback(new Error('Missing cmd parameter'))
   else if (
     event.cmd !== 'books' &&
     event.cmd !== 'sources' &&
@@ -152,10 +153,10 @@ exports.handler = (event, context, callback) => {
         break
       // return the files of a book
       case 'sources':
-        if (!event.bookId) {
-          callback(new Error('missing bookId parameter'))
+        if (!event.bookid) {
+          callback(new Error('missing bookid parameter'))
         } else {
-          listFilesByBook(event.bookId)
+          listFilesByBook(event.bookid)
             .then(results => {
               callback(null, results)
             })
@@ -166,10 +167,10 @@ exports.handler = (event, context, callback) => {
         break
       // return the sessions of a file
       case 'list':
-        if (!event.fileId) {
-          callback(new Error('missing fileId parameter'))
+        if (!event.fileid) {
+          callback(new Error('missing fileid parameter'))
         } else {
-          listSessionsByFile(event.fileId)
+          listSessionsByFile(event.fileid)
             .then(results => {
               callback(null, results)
             })
@@ -180,10 +181,10 @@ exports.handler = (event, context, callback) => {
         break
       // return the events of a session
       case 'single':
-        if (!event.sessionId) {
+        if (!event.sessionid) {
           callback(new Error('missing sessionId parameter'))
         } else {
-          listEventsBySession(event.sessionId)
+          listEventsBySession(event.sessionid)
             .then(results => {
               callback(null, results)
             })
@@ -199,5 +200,5 @@ exports.handler = (event, context, callback) => {
 }
 
 // exports.handler({
-//   cmd: 'single',
+//   cmd: 'sources',
 // })
