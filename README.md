@@ -1,3 +1,5 @@
+[![Build Status](https://semaphoreci.com/api/v1/alexisargyris/appsync-lambda/branches/master/badge.svg)](https://semaphoreci.com/alexisargyris/appsync-lambda)
+
 # appsync-lambda
 
 a simple wrapper of aws appsync for aws lambda
