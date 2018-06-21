@@ -21,41 +21,25 @@ exports.handler = (event, context, callback) => {
       return results
     })
   }
-  function listFilesByBook(bookid) {
+  function listFilesAndSessionsByBook(bookid) {
     let qr = `
     query {
-      listFilesByBook(bookId: "${bookid}") {
+      listFilesByBook(bookId: "${bookid}"){
         items {
-          fileId
-        }
+          fileId 
+          sessions { 
+            sessionId}
+          }
       }
     }
     `
+
     return client.query({ query: gql(qr) }).then(response => {
+      // return an array of objects [{fileId: "12123", sessions: [{sessionId: "213123", "..."}]}, {...}]
       let results = []
 
       response.data.listFilesByBook.items.forEach(element => {
-        results.push(element.fileId)
-      })
-      return results
-    })
-  }
-  function listSessionsByFile(fileid) {
-    let qr = `
-    query {
-      listSessionsByFile(fileId: "${fileid}") {
-        items {
-          sessionId
-        }
-      }
-    }
-    `
-
-    return client.query({ query: gql(qr) }).then(response => {
-      let results = []
-
-      response.data.listSessionsByFile.items.forEach(element => {
-        results.push(element.sessionId)
+        results.push(element)
       })
       return results
     })
@@ -80,7 +64,6 @@ exports.handler = (event, context, callback) => {
   if (event === undefined || event.cmd === undefined || event.cmd === '')
     callback(new Error('Missing cmd parameter'))
   else if (
-    event.cmd !== 'books' &&
     event.cmd !== 'sources' &&
     event.cmd !== 'list' &&
     event.cmd !== 'single'
@@ -142,7 +125,7 @@ exports.handler = (event, context, callback) => {
     // main switch
     switch (event.cmd) {
       // return books
-      case 'books':
+      case 'sources':
         listBooks()
           .then(results => {
             callback(null, results)
@@ -151,26 +134,12 @@ exports.handler = (event, context, callback) => {
             callback(error)
           })
         break
-      // return the files of a book
-      case 'sources':
+      // return files and sessions of book
+      case 'list':
         if (!event.bookid) {
           callback(new Error('missing bookid parameter'))
         } else {
-          listFilesByBook(event.bookid)
-            .then(results => {
-              callback(null, results)
-            })
-            .catch(error => {
-              callback(error)
-            })
-        }
-        break
-      // return the sessions of a file
-      case 'list':
-        if (!event.fileid) {
-          callback(new Error('missing fileid parameter'))
-        } else {
-          listSessionsByFile(event.fileid)
+          listFilesAndSessionsByBook(event.bookid)
             .then(results => {
               callback(null, results)
             })
@@ -199,6 +168,7 @@ exports.handler = (event, context, callback) => {
   }
 }
 
-// exports.handler({
-//   cmd: 'sources',
-// })
+exports.handler({
+  cmd: 'list',
+  bookid: 'amomonaima'
+})
